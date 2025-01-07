@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     stages {
+        /*
         stage('Build') {
 
             agent {
@@ -21,10 +22,9 @@ pipeline {
                     ls -la
                 '''
             }
-        }
+        }*/
 
         stage('Test') {
-
             agent {
                 docker {
                     image 'node:18-alpine'
@@ -39,7 +39,6 @@ pipeline {
         }
 
         stage('E2E') {
-
             agent {
                 docker {
                     image 'mcr.microsoft.com/playwright:v1.49.1-noble'
@@ -49,8 +48,9 @@ pipeline {
 
             steps{
                 sh '''
-                    npm i -g serve
-                    serve -s build
+                    npm i serve
+                    node_modules/.bin/serve -s build &
+                    sleep 10
                     npx playwright test
                 '''
             }
@@ -59,7 +59,7 @@ pipeline {
 
     post {
         always {
-            junit 'test-results/junit.xml'
+            junit 'jest-results/junit.xml'
         }
     }
     
