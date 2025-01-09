@@ -6,6 +6,32 @@ pipeline {
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
     stages {
+        // stage('Docker'){
+        //     steps{
+        //         sh 'docker build -t my-playwright .'
+        //     }
+        // }
+        stage('Build') {
+
+            agent {
+                docker {
+                    image 'node:18-alpine'
+                    reuseNode true
+                }
+            }
+            
+            steps {
+                sh '''
+                    ls -la
+                    node --version
+                    npm --version
+                    npm ci
+                    npm run build
+                    ls -la
+                '''
+            }
+        }
+
         stage('Aws'){
             agent {
                 docker {
@@ -13,41 +39,19 @@ pipeline {
                     args '--entrypoint=""'
                 }
             }
+            entrypoint {
+                AWS_S3_BUCKET = 'learnn-jenkins-20251912'
+            }
             steps{
                 withCredentials([usernamePassword(credentialsId: 'aws-token', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
                         aws --version
-                        aws s3 ls
+                        aws s3 sync build s3://$AWS_S3_BUCKET
                     '''
                 }
               
             }
         }
-        // stage('Docker'){
-        //     steps{
-        //         sh 'docker build -t my-playwright .'
-        //     }
-        // }
-        // stage('Build') {
-
-        //     agent {
-        //         docker {
-        //             image 'node:18-alpine'
-        //             reuseNode true
-        //         }
-        //     }
-            
-        //     steps {
-        //         sh '''
-        //             ls -la
-        //             node --version
-        //             npm --version
-        //             npm ci
-        //             npm run build
-        //             ls -la
-        //         '''
-        //     }
-        // }
 
         // stage('Tests'){
         //     parallel {
